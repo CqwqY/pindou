@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>拼豆图纸生成器</title>
     <style>
         * {
             box-sizing: border-box;
             font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
         body {
             background: #f1f4f9;
@@ -38,6 +39,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
         }
         h1 span {
             background: #fef9c3;
@@ -117,6 +119,7 @@
             image-rendering: crisp-edges;
             background: #ffffff;
             border-radius: 4px;
+            touch-action: none;
         }
         #beadCanvas.dragging {
             cursor: grabbing;
@@ -202,6 +205,7 @@
             gap: 8px;
             transition: 0.15s;
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            white-space: nowrap;
         }
         button:hover {
             background: #f1f5f9;
@@ -562,13 +566,284 @@
             accent-color: #eab308;
             cursor: pointer;
         }
+
+        .measure-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .measure-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .measure-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .measure-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.8rem;
+            transition: 0.15s;
+        }
+        .measure-item.selected {
+            border-color: #eab308;
+            background: #fefce8;
+        }
+        .measure-item .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .measure-item .info {
+            flex: 1;
+            color: #334155;
+            font-weight: 500;
+            cursor: pointer;
+            line-height: 1.4;
+            min-width: 0;
+        }
+        .measure-item .info .name {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .measure-item .info .detail {
+            font-size: 0.72rem;
+            color: #64748b;
+        }
+        .measure-item .info .dist {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 0.85rem;
+        }
+        .measure-item .del-btn {
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            border-radius: 20px;
+            background: #fee2e2;
+            border-color: #fecaca;
+            color: #991b1b;
+            flex-shrink: 0;
+        }
+        .measure-item .del-btn:hover {
+            background: #fecaca;
+        }
+        .measure-empty {
+            text-align: center;
+            padding: 16px;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+
+        .measure-tip {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            color: #92400e;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: none;
+        }
+        .measure-tip.active {
+            display: block;
+        }
+
+        /* 测距刻度间隔设置 */
+        .measure-scale-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .measure-scale-row label {
+            font-size: 0.8rem;
+            color: #334155;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .measure-scale-row select {
+            flex: 1;
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 0.82rem;
+            color: #0f172a;
+            outline: none;
+            cursor: pointer;
+        }
+        .measure-scale-row select:focus {
+            border-color: #eab308;
+        }
+
+        @media (max-width: 860px) {
+            body {
+                padding: 8px;
+                align-items: flex-start;
+            }
+            .app-container {
+                border-radius: 20px;
+                padding: 16px 14px 18px;
+                gap: 14px;
+            }
+            h1 {
+                font-size: 1.3rem;
+            }
+            h1 span {
+                font-size: 0.8rem;
+                padding: 3px 10px;
+            }
+            .main-panel {
+                flex-direction: column;
+                gap: 16px;
+            }
+            .canvas-area,
+            .controls {
+                min-width: 0;
+                width: 100%;
+            }
+            .controls {
+                max-height: none;
+                padding: 16px 14px;
+                border-radius: 18px;
+            }
+            .specs-row {
+                gap: 8px;
+            }
+            .spec-item {
+                padding: 6px 12px;
+                flex: 1 1 auto;
+            }
+            .spec-item label {
+                font-size: 0.8rem;
+            }
+            .spec-item input[type="number"] {
+                width: 50px;
+                font-size: 0.85rem;
+            }
+            .zoom-controls {
+                padding: 4px 8px;
+            }
+            .zoom-controls button {
+                padding: 4px 8px;
+                font-size: 0.8rem;
+            }
+            .zoom-controls .zoom-value {
+                font-size: 0.8rem;
+                min-width: 40px;
+            }
+            button {
+                padding: 8px 14px;
+                font-size: 0.82rem;
+            }
+            .canvas-scroll-container {
+                max-height: 55vh;
+                border-radius: 14px;
+            }
+            .canvas-inner-wrapper {
+                padding: 20px 20px 20px 24px;
+            }
+            .axis-x {
+                left: 24px;
+                height: 18px;
+                bottom: 2px;
+            }
+            .axis-y {
+                left: 2px;
+                width: 20px;
+                top: 20px;
+            }
+            .axis-label {
+                font-size: 8px;
+            }
+            .mode-indicator {
+                font-size: 0.72rem;
+                padding: 3px 8px;
+            }
+            .status {
+                font-size: 0.75rem;
+            }
+            .section-title {
+                font-size: 0.88rem;
+            }
+            .hint {
+                font-size: 0.7rem;
+            }
+            .export-modal-content,
+            .position-modal-content {
+                padding: 16px;
+                border-radius: 18px;
+                max-height: 94vh;
+            }
+            .export-preview-wrapper {
+                padding: 10px;
+                max-height: 50vh;
+            }
+            .export-options {
+                gap: 10px;
+                padding: 10px 12px;
+            }
+            .export-options label {
+                font-size: 0.78rem;
+            }
+            .modal-actions {
+                flex-wrap: wrap;
+            }
+            .modal-actions button {
+                flex: 1;
+            }
+            .measure-list {
+                max-height: 220px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .app-container {
+                padding: 12px 10px 14px;
+            }
+            h1 {
+                font-size: 1.15rem;
+            }
+            h1 span {
+                font-size: 0.7rem;
+                padding: 2px 8px;
+            }
+            .spec-item {
+                padding: 5px 10px;
+            }
+            .spec-item input[type="number"] {
+                width: 42px;
+            }
+            .canvas-scroll-container {
+                max-height: 48vh;
+            }
+            .tool-group button {
+                flex: 1;
+                min-width: 0;
+            }
+        }
     </style>
 </head>
 <body>
 <div class="app-container">
     <h1>
         拼豆图纸生成器
-        <span>导出 · 图例 · 数字</span>
+        <span>导出 · 图例 · 数字 · 测距</span>
     </h1>
 
     <div class="main-panel">
@@ -663,6 +938,31 @@
             <div class="divider"></div>
 
             <div>
+                <div class="section-title">测距</div>
+                <div class="tool-group" style="margin-bottom: 10px;">
+                    <button id="measureModeBtn" style="flex:1;">新建测距</button>
+                    <button id="clearMeasuresBtn" class="warning" style="flex:1;">清除全部</button>
+                </div>
+                <div class="measure-scale-row">
+                    <label>刻度间隔</label>
+                    <select id="measureScaleSelect">
+                        <option value="1">每 1 格</option>
+                        <option value="2">每 2 格</option>
+                        <option value="5" selected>每 5 格</option>
+                        <option value="10">每 10 格</option>
+                        <option value="0">不显示刻度</option>
+                    </select>
+                </div>
+                <div class="measure-tip" id="measureTip">点击画布选择起点和终点，可连续创建多条测距线</div>
+                <div class="hint" style="margin-bottom: 10px;">距离以格子数显示，测距线上按间隔显示刻度标记</div>
+                <div class="measure-list" id="measureList">
+                    <div class="measure-empty">暂无测距线</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
                 <div class="section-title">数字显示</div>
                 <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#334155; cursor:pointer;">
                     <input type="checkbox" id="showNumbersToggle" style="width:16px; height:16px; accent-color:#eab308; cursor:pointer;">
@@ -727,6 +1027,10 @@
                 <input type="checkbox" id="optShowCoords" checked>
                 包含行列坐标
             </label>
+            <label>
+                <input type="checkbox" id="optShowMeasures" checked>
+                包含测距线
+            </label>
         </div>
         <div class="export-preview-wrapper">
             <canvas id="exportPreviewCanvas"></canvas>
@@ -764,6 +1068,16 @@
 
         let colorIndexMap = new Map();
 
+        let measures = [];
+        let measureIdCounter = 0;
+        let selectedMeasureId = null;
+
+        let pendingMeasureStart = null;
+        let measureModeActive = false;
+        let measureScaleInterval = 5;  // 刻度间隔（格数），0 表示不显示
+
+        const MEASURE_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+
         const canvas = document.getElementById('beadCanvas');
         const ctx = canvas.getContext('2d');
         const scrollContainer = document.getElementById('canvasScrollContainer');
@@ -791,6 +1105,11 @@
         const zoomOutBtn = document.getElementById('zoomOutBtn');
         const showNumbersToggle = document.getElementById('showNumbersToggle');
         const exportBtn = document.getElementById('exportBtn');
+        const measureModeBtn = document.getElementById('measureModeBtn');
+        const clearMeasuresBtn = document.getElementById('clearMeasuresBtn');
+        const measureList = document.getElementById('measureList');
+        const measureTip = document.getElementById('measureTip');
+        const measureScaleSelect = document.getElementById('measureScaleSelect');
 
         const openPositionBtn = document.getElementById('openPositionBtn');
         const positionModal = document.getElementById('positionModal');
@@ -816,6 +1135,7 @@
         const optShowNumbers = document.getElementById('optShowNumbers');
         const optShowLegend = document.getElementById('optShowLegend');
         const optShowCoords = document.getElementById('optShowCoords');
+        const optShowMeasures = document.getElementById('optShowMeasures');
 
         function initGrid(columns, rows, fillColor = null) {
             const newGrid = [];
@@ -835,6 +1155,7 @@
             grid = initGrid(cols, rows, fillColor);
             colsInput.value = cols;
             rowsInput.value = rows;
+            clearAllMeasures(true);
             resizeCanvas();
             updateColorCount();
             updateStatus(`网格已重置为 ${cols} x ${rows}`);
@@ -949,6 +1270,154 @@
             ctx.strokeStyle = '#94a3b8';
             ctx.lineWidth = 2;
             ctx.strokeRect(0, 0, totalWidth, totalHeight);
+
+            drawMeasures();
+        }
+
+        // 绘制测距线（带刻度）
+        function drawMeasures() {
+            measures.forEach(m => {
+                const x1 = (m.c1 + 0.5) * cellSize;
+                const y1 = (m.r1 + 0.5) * cellSize;
+                const x2 = (m.c2 + 0.5) * cellSize;
+                const y2 = (m.r2 + 0.5) * cellSize;
+
+                const isSelected = m.id === selectedMeasureId;
+
+                ctx.save();
+                ctx.strokeStyle = m.color;
+                ctx.lineWidth = isSelected ? 3 : 2;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // 绘制刻度标记
+                drawMeasureTicks(x1, y1, x2, y2, m.color, isSelected);
+
+                // 端点圆圈
+                ctx.fillStyle = m.color;
+                ctx.beginPath();
+                ctx.arc(x1, y1, isSelected ? 5 : 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x2, y2, isSelected ? 5 : 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(x1, y1, isSelected ? 2.5 : 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x2, y2, isSelected ? 2.5 : 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 中点标签
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+                const info = calcMeasureInfo(m);
+                const label = `${info.dist.toFixed(2)}格`;
+
+                ctx.font = 'bold 11px system-ui, sans-serif';
+                const textWidth = ctx.measureText(label).width;
+                const padding = 6;
+                const boxW = textWidth + padding * 2;
+                const boxH = 18;
+                const boxX = midX - boxW / 2;
+                const boxY = midY - boxH / 2;
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.strokeStyle = m.color;
+                ctx.lineWidth = 1.5;
+                roundRect(ctx, boxX, boxY, boxW, boxH, 6);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, midX, midY + 0.5);
+
+                ctx.restore();
+            });
+
+            if (pendingMeasureStart) {
+                const px = (pendingMeasureStart.c + 0.5) * cellSize;
+                const py = (pendingMeasureStart.r + 0.5) * cellSize;
+
+                ctx.save();
+                ctx.fillStyle = '#eab308';
+                ctx.beginPath();
+                ctx.arc(px, py, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // 绘制测距刻度（核心：像尺子一样细分）
+        function drawMeasureTicks(x1, y1, x2, y2, color, isSelected) {
+            if (measureScaleInterval <= 0) return; // 不显示刻度
+
+            // 计算测距线的总长度（以格为单位）
+            const dxCells = x2 - x1;
+            const dyCells = y2 - y1;
+            const totalCells = Math.sqrt(dxCells * dxCells + dyCells * dyCells);
+
+            if (totalCells < measureScaleInterval) return; // 太短，不显示刻度
+
+            // 计算单位向量
+            const ux = dxCells / totalCells;
+            const uy = dyCells / totalCells;
+
+            // 垂直向量（用于画刻度线，垂直于测距线）
+            const px = -uy;
+            const py = ux;
+
+            // 刻度线长度
+            const tickLength = isSelected ? 7 : 5;
+            const majorTickLength = isSelected ? 10 : 8;
+
+            // 在测距线上按间隔绘制刻度
+            // 从起点开始，每隔 measureScaleInterval 格画一个刻度
+            // 端点已经用圆圈标记，所以从小间隔开始
+            for (let d = measureScaleInterval; d < totalCells; d += measureScaleInterval) {
+                const cx = x1 + ux * d;
+                const cy = y1 + uy * d;
+
+                // 判断是否为主刻度（每 5 个间隔，或者每 10 格）
+                const isMajor = (d % (measureScaleInterval * 5) === 0) ||
+                                (d % 10 === 0) ||
+                                (d === measureScaleInterval); // 第一个也是主刻度
+
+                const len = isMajor ? majorTickLength : tickLength;
+
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = isMajor ? 2 : 1.2;
+                ctx.beginPath();
+                ctx.moveTo(cx - px * len / 2, cy - py * len / 2);
+                ctx.lineTo(cx + px * len / 2, cy + py * len / 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
         }
 
         function updateColorCount() {
@@ -1009,6 +1478,107 @@
             return true;
         }
 
+        function startMeasureMode() {
+            measureModeActive = true;
+            pendingMeasureStart = null;
+            selectedMeasureId = null;
+            setMode('measure');
+            measureModeBtn.classList.add('primary');
+            measureTip.classList.add('active');
+            updateStatus('测距模式：点击画布选择起点');
+            drawCanvas();
+        }
+
+        function exitMeasureMode() {
+            measureModeActive = false;
+            pendingMeasureStart = null;
+            measureModeBtn.classList.remove('primary');
+            measureTip.classList.remove('active');
+        }
+
+        function clearAllMeasures(silent = false) {
+            measures = [];
+            selectedMeasureId = null;
+            pendingMeasureStart = null;
+            renderMeasureList();
+            if (!silent) {
+                drawCanvas();
+                updateStatus('已清除全部测距线');
+            }
+        }
+
+        function deleteMeasure(id) {
+            measures = measures.filter(m => m.id !== id);
+            if (selectedMeasureId === id) selectedMeasureId = null;
+            renderMeasureList();
+            drawCanvas();
+            updateStatus('已删除测距线');
+        }
+
+        function getMeasureColor() {
+            return MEASURE_COLORS[measureIdCounter % MEASURE_COLORS.length];
+        }
+
+        function calcMeasureInfo(m) {
+            const dc = Math.abs(m.c2 - m.c1);
+            const dr = Math.abs(m.r2 - m.r1);
+            const dist = Math.sqrt(dc * dc + dr * dr);
+            return { dc, dr, dist };
+        }
+
+        function renderMeasureList() {
+            if (measures.length === 0) {
+                measureList.innerHTML = '<div class="measure-empty">暂无测距线</div>';
+                return;
+            }
+
+            let html = '';
+            measures.forEach((m, i) => {
+                const info = calcMeasureInfo(m);
+                const isSelected = m.id === selectedMeasureId;
+                html += `
+                    <div class="measure-item ${isSelected ? 'selected' : ''}" data-id="${m.id}">
+                        <div class="color-dot" style="background:${m.color}"></div>
+                        <div class="info" data-action="select" data-id="${m.id}">
+                            <div class="name">测距 ${i + 1}</div>
+                            <div class="detail">
+                                <span class="dist">${info.dist.toFixed(2)} 格</span>
+                                &nbsp;·&nbsp;横 ${info.dc} 竖 ${info.dr}
+                            </div>
+                            <div class="detail">(${m.c1 + 1}, ${m.r1 + 1}) → (${m.c2 + 1}, ${m.r2 + 1})</div>
+                        </div>
+                        <button class="del-btn" data-action="delete" data-id="${m.id}">删除</button>
+                    </div>
+                `;
+            });
+            measureList.innerHTML = html;
+        }
+
+        measureList.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-action]');
+            if (!target) return;
+            const action = target.dataset.action;
+            const id = parseInt(target.dataset.id, 10);
+
+            if (action === 'delete') {
+                deleteMeasure(id);
+            } else if (action === 'select') {
+                selectedMeasureId = id;
+                renderMeasureList();
+                drawCanvas();
+                const m = measures.find(m => m.id === id);
+                if (m) {
+                    const centerX = (m.c1 + m.c2) / 2 * cellSize;
+                    const centerY = (m.r1 + m.r2) / 2 * cellSize;
+                    scrollContainer.scrollTo({
+                        left: Math.max(0, centerX - scrollContainer.clientWidth / 2),
+                        top: Math.max(0, centerY - scrollContainer.clientHeight / 2),
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+
         let isDrawing = false;
         let isPanning = false;
         let panStartX = 0;
@@ -1019,6 +1589,39 @@
 
         function handleStart(e) {
             const cell = getCellFromEvent(e);
+
+            if (editorMode === 'measure') {
+                if (cell) {
+                    if (!pendingMeasureStart) {
+                        pendingMeasureStart = { r: cell.row, c: cell.col };
+                        updateStatus(`起点已选 (${cell.col + 1}, ${cell.row + 1})，请点击终点`);
+                        drawCanvas();
+                    } else {
+                        if (pendingMeasureStart.r === cell.row && pendingMeasureStart.c === cell.col) {
+                            updateStatus('起点和终点不能相同，请重新选择终点');
+                            return;
+                        }
+                        measures.push({
+                            id: ++measureIdCounter,
+                            r1: pendingMeasureStart.r,
+                            c1: pendingMeasureStart.c,
+                            r2: cell.row,
+                            c2: cell.col,
+                            color: getMeasureColor()
+                        });
+                        pendingMeasureStart = null;
+                        selectedMeasureId = measures[measures.length - 1].id;
+                        renderMeasureList();
+                        drawCanvas();
+
+                        const info = calcMeasureInfo(measures[measures.length - 1]);
+                        updateStatus(`测距 ${measures.length} 创建完成：${info.dist.toFixed(2)} 格。可继续点击画布创建下一条`);
+                    }
+                    if (e.touches) e.preventDefault();
+                }
+                return;
+            }
+
             const shouldPan = (editorMode === 'pan') || spacePressed;
 
             if (shouldPan) {
@@ -1078,6 +1681,13 @@
                 spacePressed = true;
                 canvas.style.cursor = 'grab';
             }
+            if (e.code === 'Escape') {
+                if (editorMode === 'measure') {
+                    pendingMeasureStart = null;
+                    drawCanvas();
+                    updateStatus('已取消当前测距起点');
+                }
+            }
         });
         window.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
@@ -1087,7 +1697,9 @@
         });
 
         function updateCursor() {
-            if (editorMode === 'pan' || spacePressed) {
+            if (editorMode === 'measure') {
+                canvas.style.cursor = 'crosshair';
+            } else if (editorMode === 'pan' || spacePressed) {
                 canvas.style.cursor = 'grab';
             } else if (editorMode === 'draw' || editorMode === 'erase') {
                 canvas.style.cursor = 'crosshair';
@@ -1141,6 +1753,17 @@
             updateStatus(showNumbersOnCanvas ? '已显示颜色编号' : '已隐藏颜色编号');
         });
 
+        // 刻度间隔变化
+        measureScaleSelect.addEventListener('change', (e) => {
+            measureScaleInterval = parseInt(e.target.value, 10);
+            drawCanvas();
+            if (measureScaleInterval === 0) {
+                updateStatus('已关闭测距刻度');
+            } else {
+                updateStatus(`测距刻度间隔：每 ${measureScaleInterval} 格`);
+            }
+        });
+
         applySpecBtn.addEventListener('click', () => {
             let newCols = parseInt(colsInput.value, 10);
             let newRows = parseInt(rowsInput.value, 10);
@@ -1165,6 +1788,10 @@
             rows = newRows;
             colsInput.value = cols;
             rowsInput.value = rows;
+            measures = measures.filter(m =>
+                m.c1 < cols && m.c2 < cols && m.r1 < rows && m.r2 < rows
+            );
+            renderMeasureList();
             resizeCanvas();
             updateColorCount();
             updateStatus(`规格已更新: ${cols} x ${rows}`);
@@ -1581,6 +2208,25 @@
         unifyBtn.addEventListener('click', () => unifySimilarColors(true));
         previewUnifyBtn.addEventListener('click', () => unifySimilarColors(false));
 
+        measureModeBtn.addEventListener('click', () => {
+            if (editorMode === 'measure') {
+                exitMeasureMode();
+                setMode('pan');
+            } else {
+                startMeasureMode();
+            }
+        });
+
+        clearMeasuresBtn.addEventListener('click', () => {
+            if (measures.length === 0) {
+                updateStatus('暂无测距线');
+                return;
+            }
+            if (confirm(`确定要清除全部 ${measures.length} 条测距线吗？`)) {
+                clearAllMeasures();
+            }
+        });
+
         function setMode(mode) {
             editorMode = mode;
 
@@ -1592,15 +2238,21 @@
                 modeIndicator.textContent = '绘制模式';
                 modeIndicator.style.background = '#e0f2fe';
                 updateStatus('绘制模式：点击/拖动格子进行绘制');
+                exitMeasureMode();
             } else if (mode === 'erase') {
                 eraseModeBtn.classList.add('primary');
                 modeIndicator.textContent = '擦除模式';
                 modeIndicator.style.background = '#fed7aa';
                 updateStatus('擦除模式：点击/拖动格子清除颜色');
+                exitMeasureMode();
+            } else if (mode === 'measure') {
+                modeIndicator.textContent = '测距模式';
+                modeIndicator.style.background = '#fef3c7';
             } else {
                 modeIndicator.textContent = '拖动模式';
                 modeIndicator.style.background = '#e2e8f0';
                 updateStatus('拖动模式：按住拖动画布平移');
+                exitMeasureMode();
             }
             updateCursor();
         }
@@ -1626,18 +2278,14 @@
             originalImage = null;
             openPositionBtn.style.display = 'none';
             imageInfoBox.style.display = 'none';
+            clearAllMeasures(true);
             resetGrid(cols, rows, null);
         });
 
-        // ========== 计算坐标步长 ==========
-        // 根据总格数和可用空间，自动选择合适的步长，避免数字过密
         function calculateCoordinateStep(count, availableSpace, minSpacing = 30) {
-            // 如果每个刻度都放不下，就增加步长
-            // 可用空间 / 每格大小 = 能容纳的标签数
             const maxLabels = Math.floor(availableSpace / minSpacing);
             if (count <= maxLabels) return 1;
 
-            // 候选步长：1, 2, 5, 10, 20, 25, 50, 100
             const candidates = [1, 2, 5, 10, 20, 25, 50, 100];
             for (const step of candidates) {
                 const labelCount = Math.ceil(count / step);
@@ -1648,18 +2296,17 @@
             return Math.ceil(count / maxLabels);
         }
 
-        // ========== 导出功能 ==========
         function renderExportCanvas() {
             const showGrid = optShowGrid.checked;
             const showNums = optShowNumbers.checked;
             const showLegend = optShowLegend.checked;
             const showCoords = optShowCoords.checked;
+            const showMeasures = optShowMeasures.checked;
 
             const exportCellSize = Math.max(cellSize, 24);
             const gridWidth = cols * exportCellSize;
             const gridHeight = rows * exportCellSize;
 
-            // 坐标轴空间：根据是否显示坐标以及格子大小动态调整
             const coordFontSize = Math.min(Math.max(exportCellSize * 0.4, 10), 14);
             const paddingLeft = showCoords ? Math.max(40, coordFontSize * 3) : 0;
             const paddingTop = showCoords ? Math.max(40, coordFontSize * 3) : 0;
@@ -1686,8 +2333,16 @@
                 legendHeight = legendRows * legendItemHeight + 60;
             }
 
-            const totalWidth = paddingLeft + gridWidth + paddingRight + (showLegend ? legendWidth : 0);
-            const totalHeight = paddingTop + gridHeight + paddingBottom + (showLegend ? legendHeight : 0);
+            let measureListWidth = 0;
+            let measureListHeight = 0;
+            const showMeasureList = showMeasures && measures.length > 0;
+            if (showMeasureList) {
+                measureListWidth = 240;
+                measureListHeight = measures.length * 52 + 60;
+            }
+
+            const totalWidth = paddingLeft + gridWidth + paddingRight + (showLegend ? legendWidth : 0) + (showMeasureList ? measureListWidth : 0);
+            const totalHeight = paddingTop + gridHeight + paddingBottom + Math.max(legendHeight, showMeasureList ? measureListHeight : 0);
 
             exportPreviewCanvas.width = totalWidth;
             exportPreviewCanvas.height = totalHeight;
@@ -1695,9 +2350,7 @@
             exportCtx.fillStyle = '#ffffff';
             exportCtx.fillRect(0, 0, totalWidth, totalHeight);
 
-            // 绘制行号列号（自动步长）
             if (showCoords) {
-                // 计算步长，保证标签间距至少 coordFontSize * 3
                 const minSpacing = Math.max(coordFontSize * 3, 30);
                 const stepX = calculateCoordinateStep(cols, gridWidth, minSpacing);
                 const stepY = calculateCoordinateStep(rows, gridHeight, minSpacing);
@@ -1707,9 +2360,7 @@
                 exportCtx.textAlign = 'center';
                 exportCtx.textBaseline = 'middle';
 
-                // 列号（在网格上方）
                 for (let c = 1; c <= cols; c++) {
-                    // 显示第一个、最后一个、以及按步长整除的
                     if (c === 1 || c === cols || c % stepX === 0) {
                         const x = paddingLeft + (c - 0.5) * exportCellSize;
                         const y = paddingTop / 2;
@@ -1717,7 +2368,6 @@
                     }
                 }
 
-                // 行号（在网格左侧）
                 for (let r = 1; r <= rows; r++) {
                     if (r === 1 || r === rows || r % stepY === 0) {
                         const x = paddingLeft / 2;
@@ -1726,7 +2376,6 @@
                     }
                 }
 
-                // 绘制小刻度线，增强可读性
                 exportCtx.strokeStyle = '#cbd5e1';
                 exportCtx.lineWidth = 1;
                 for (let c = 1; c <= cols; c++) {
@@ -1749,7 +2398,6 @@
                 }
             }
 
-            // 绘制网格
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const color = grid[r][c];
@@ -1785,7 +2433,69 @@
             exportCtx.lineWidth = 2;
             exportCtx.strokeRect(paddingLeft, paddingTop, gridWidth, gridHeight);
 
-            // 绘制图例
+            // 绘制测距线（带刻度）
+            if (showMeasures && measures.length > 0) {
+                measures.forEach((m) => {
+                    const x1 = paddingLeft + (m.c1 + 0.5) * exportCellSize;
+                    const y1 = paddingTop + (m.r1 + 0.5) * exportCellSize;
+                    const x2 = paddingLeft + (m.c2 + 0.5) * exportCellSize;
+                    const y2 = paddingTop + (m.r2 + 0.5) * exportCellSize;
+
+                    exportCtx.save();
+                    exportCtx.strokeStyle = m.color;
+                    exportCtx.lineWidth = 2;
+                    exportCtx.beginPath();
+                    exportCtx.moveTo(x1, y1);
+                    exportCtx.lineTo(x2, y2);
+                    exportCtx.stroke();
+
+                    // 刻度标记（导出时也带刻度）
+                    drawMeasureTicksExport(exportCtx, x1, y1, x2, y2, m.color, exportCellSize);
+
+                    // 端点
+                    exportCtx.fillStyle = m.color;
+                    exportCtx.beginPath();
+                    exportCtx.arc(x1, y1, 4, 0, Math.PI * 2);
+                    exportCtx.fill();
+                    exportCtx.beginPath();
+                    exportCtx.arc(x2, y2, 4, 0, Math.PI * 2);
+                    exportCtx.fill();
+                    exportCtx.fillStyle = '#ffffff';
+                    exportCtx.beginPath();
+                    exportCtx.arc(x1, y1, 2, 0, Math.PI * 2);
+                    exportCtx.fill();
+                    exportCtx.beginPath();
+                    exportCtx.arc(x2, y2, 2, 0, Math.PI * 2);
+                    exportCtx.fill();
+
+                    const midX = (x1 + x2) / 2;
+                    const midY = (y1 + y2) / 2;
+                    const info = calcMeasureInfo(m);
+                    const label = `${info.dist.toFixed(2)}格`;
+
+                    exportCtx.font = 'bold 12px system-ui, sans-serif';
+                    const textWidth = exportCtx.measureText(label).width;
+                    const boxW = textWidth + 12;
+                    const boxH = 20;
+                    const boxX = midX - boxW / 2;
+                    const boxY = midY - boxH / 2;
+
+                    exportCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                    exportCtx.strokeStyle = m.color;
+                    exportCtx.lineWidth = 1.5;
+                    roundRect(exportCtx, boxX, boxY, boxW, boxH, 6);
+                    exportCtx.fill();
+                    exportCtx.stroke();
+
+                    exportCtx.fillStyle = '#0f172a';
+                    exportCtx.textAlign = 'center';
+                    exportCtx.textBaseline = 'middle';
+                    exportCtx.fillText(label, midX, midY + 0.5);
+
+                    exportCtx.restore();
+                });
+            }
+
             if (showLegend && legendColors.length > 0) {
                 const legendStartX = paddingLeft + gridWidth + paddingRight + 20;
                 const legendStartY = paddingTop + 10;
@@ -1824,7 +2534,83 @@
                 });
             }
 
+            if (showMeasureList) {
+                const measureStartX = paddingLeft + gridWidth + paddingRight + 20 + (showLegend ? legendWidth : 0);
+                const measureStartY = paddingTop + 10;
+
+                exportCtx.fillStyle = '#1e293b';
+                exportCtx.font = 'bold 16px system-ui, sans-serif';
+                exportCtx.textAlign = 'left';
+                exportCtx.textBaseline = 'top';
+                exportCtx.fillText('测距列表', measureStartX, measureStartY);
+
+                const itemStartY = measureStartY + 34;
+
+                measures.forEach((m, i) => {
+                    const iy = itemStartY + i * 52;
+
+                    exportCtx.fillStyle = m.color;
+                    exportCtx.beginPath();
+                    exportCtx.arc(measureStartX + 8, iy + 14, 6, 0, Math.PI * 2);
+                    exportCtx.fill();
+
+                    exportCtx.fillStyle = '#0f172a';
+                    exportCtx.font = 'bold 13px system-ui, sans-serif';
+                    exportCtx.textAlign = 'left';
+                    exportCtx.textBaseline = 'top';
+                    exportCtx.fillText(`测距 ${i + 1}`, measureStartX + 22, iy + 2);
+
+                    const info = calcMeasureInfo(m);
+                    exportCtx.fillStyle = '#475569';
+                    exportCtx.font = '12px system-ui, sans-serif';
+                    exportCtx.fillText(`距离 ${info.dist.toFixed(2)} 格`, measureStartX + 22, iy + 20);
+
+                    exportCtx.fillStyle = '#94a3b8';
+                    exportCtx.font = '11px system-ui, sans-serif';
+                    exportCtx.fillText(`(${m.c1 + 1},${m.r1 + 1}) → (${m.c2 + 1},${m.r2 + 1})`, measureStartX + 22, iy + 36);
+                });
+            }
+
             return { totalWidth, totalHeight };
+        }
+
+        // 导出时绘制刻度（独立函数，避免依赖画布 cellSize）
+        function drawMeasureTicksExport(ctx, x1, y1, x2, y2, color, exportCellSize) {
+            if (measureScaleInterval <= 0) return;
+
+            const dxCells = x2 - x1;
+            const dyCells = y2 - y1;
+            const totalCells = Math.sqrt(dxCells * dxCells + dyCells * dyCells);
+
+            if (totalCells < measureScaleInterval) return;
+
+            const ux = dxCells / totalCells;
+            const uy = dyCells / totalCells;
+            const px = -uy;
+            const py = ux;
+
+            const tickLength = 6;
+            const majorTickLength = 9;
+
+            for (let d = measureScaleInterval; d < totalCells; d += measureScaleInterval) {
+                const cx = x1 + ux * d;
+                const cy = y1 + uy * d;
+
+                const isMajor = (d % (measureScaleInterval * 5) === 0) ||
+                                (d % 10 === 0) ||
+                                (d === measureScaleInterval);
+
+                const len = isMajor ? majorTickLength : tickLength;
+
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = isMajor ? 2 : 1.2;
+                ctx.beginPath();
+                ctx.moveTo(cx - px * len / 2, cy - py * len / 2);
+                ctx.lineTo(cx + px * len / 2, cy + py * len / 2);
+                ctx.stroke();
+                ctx.restore();
+            }
         }
 
         exportBtn.addEventListener('click', () => {
@@ -1836,7 +2622,7 @@
             exportModal.classList.add('active');
         });
 
-        [optShowGrid, optShowNumbers, optShowLegend, optShowCoords].forEach(el => {
+        [optShowGrid, optShowNumbers, optShowLegend, optShowCoords, optShowMeasures].forEach(el => {
             el.addEventListener('change', () => {
                 if (exportModal.classList.contains('active')) {
                     renderExportCanvas();
@@ -1879,6 +2665,8 @@
         drawColorInput.value = '#eab308';
         similarityRange.value = 40;
         similarityValue.textContent = '40';
+        measureScaleSelect.value = '5';
+        measureScaleInterval = 5;
 
         colsInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') applySpecBtn.click();
@@ -1888,6 +2676,7 @@
         });
 
         canvas.addEventListener('dragstart', (e) => e.preventDefault());
+        renderMeasureList();
     })();
 </script>
 </body>
