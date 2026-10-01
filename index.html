@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼豆图纸生成器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: #f1f4f9;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .app-container {
+            background: white;
+            max-width: 1400px;
+            width: 100%;
+            border-radius: 32px;
+            padding: 24px 28px 28px;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        h1 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.8rem;
+            letter-spacing: -0.01em;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        h1 span {
+            background: #fef9c3;
+            color: #0f172a;
+            font-size: 1rem;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: 500;
+        }
+        .main-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+        }
+        .canvas-area {
+            flex: 2;
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 20px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.02);
+            border: 1px solid #e2e8f0;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .controls::-webkit-scrollbar {
+            width: 6px;
+        }
+        .controls::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .canvas-scroll-container {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.02);
+            overflow: auto;
+            max-height: 72vh;
+            position: relative;
+        }
+        .canvas-scroll-container::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        .canvas-scroll-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        .canvas-scroll-container::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+            border: 2px solid #f1f5f9;
+        }
+        .canvas-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        .canvas-inner-wrapper {
+            position: relative;
+            display: inline-block;
+            padding: 26px 26px 26px 30px;
+        }
+        #beadCanvas {
+            display: block;
+            cursor: grab;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            background: #ffffff;
+            border-radius: 4px;
+        }
+        #beadCanvas.dragging {
+            cursor: grabbing;
+        }
+        .axis-x, .axis-y {
+            position: absolute;
+            display: flex;
+            user-select: none;
+            pointer-events: none;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .axis-x {
+            bottom: 4px;
+            left: 30px;
+            height: 22px;
+        }
+        .axis-y {
+            top: 26px;
+            left: 4px;
+            width: 24px;
+            flex-direction: column;
+        }
+        .axis-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #64748b;
+            font-weight: 600;
+            position: absolute;
+            transform: translate(-50%, 0);
+        }
+        .axis-y .axis-label {
+            transform: translate(0, -50%);
+        }
+        .specs-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .spec-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid #e2e8f0;
+        }
+        .spec-item label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #334155;
+        }
+        .spec-item input[type="number"] {
+            width: 70px;
+            border: none;
+            font-weight: 600;
+            color: #0f172a;
+            padding: 4px 0;
+            font-size: 0.95rem;
+            border-bottom: 2px solid #cbd5e1;
+            outline: none;
+            text-align: center;
+            background: transparent;
+        }
+        .spec-item input[type="number"]:focus {
+            border-bottom-color: #eab308;
+        }
+        button {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: 0.15s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        button:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        button.primary {
+            background: #1e293b;
+            border-color: #1e293b;
+            color: white;
+        }
+        button.primary:hover {
+            background: #0f172a;
+        }
+        button.warning {
+            background: #fee2e2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+        button.warning:hover {
+            background: #fecaca;
+        }
+        button.success {
+            background: #dcfce7;
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+        button.success:hover {
+            background: #bbf7d0;
+        }
+        .file-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #eab308;
+            border: 1px solid #eab308;
+            color: #0f172a;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .file-label:hover {
+            background: #facc15;
+        }
+        .file-label input {
+            display: none;
+        }
+        .tool-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: white;
+            border-radius: 40px;
+            border: 1px solid #e2e8f0;
+        }
+        .color-picker-wrapper span {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #334155;
+            margin-left: 6px;
+        }
+        input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #e2e8f0;
+            border-radius: 50%;
+            padding: 0;
+            cursor: pointer;
+            background: white;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+        .mode-indicator {
+            font-size: 0.8rem;
+            background: #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 30px;
+            color: #334155;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .status {
+            font-size: 0.85rem;
+            color: #475569;
+            min-height: 20px;
+        }
+        .divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 2px 0;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-row label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #334155;
+            min-width: 60px;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+            accent-color: #eab308;
+        }
+        .slider-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #0f172a;
+            min-width: 40px;
+            text-align: right;
+        }
+        .hint {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: -4px;
+            line-height: 1.4;
+        }
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #0f172a;
+            font-size: 0.95rem;
+        }
+        .color-count-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #e0f2fe;
+            color: #0369a1;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 30px;
+            margin-left: 6px;
+        }
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 6px 12px;
+            border-radius: 40px;
+            border: 1px solid #e2e8f0;
+        }
+        .zoom-controls button {
+            padding: 4px 10px;
+            font-size: 0.85rem;
+            border-radius: 20px;
+        }
+        .zoom-controls .zoom-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #0f172a;
+            min-width: 50px;
+            text-align: center;
+        }
+        .position-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .position-modal.active {
+            display: flex;
+        }
+        .position-modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.3);
+        }
+        .position-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .position-modal-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #1e293b;
+        }
+        .position-canvas-wrapper {
+            position: relative;
+            background: #f8fafc;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px dashed #cbd5e1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        #positionCanvas {
+            display: block;
+            max-width: 100%;
+            max-height: 55vh;
+            border-radius: 8px;
+            background: #ffffff;
+            cursor: grab;
+            box-shadow: 0 0 0 1px #e2e8f0;
+        }
+        #positionCanvas:active {
+            cursor: grabbing;
+        }
+        .position-controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .position-controls .slider-row {
+            flex: 1;
+            min-width: 200px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .position-info {
+            font-size: 0.85rem;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 8px 14px;
+            border-radius: 30px;
+            display: inline-block;
+        }
+        .image-preview-mini {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+        }
+        .image-preview-mini canvas {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: white;
+        }
+        .image-preview-mini .info {
+            font-size: 0.8rem;
+            color: #475569;
+        }
+        .export-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .export-modal.active {
+            display: flex;
+        }
+        .export-modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            max-width: 1000px;
+            width: 100%;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.3);
+        }
+        .export-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .export-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #1e293b;
+        }
+        .export-preview-wrapper {
+            flex: 1;
+            overflow: auto;
+            background: #f1f5f9;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            max-height: 65vh;
+        }
+        #exportPreviewCanvas {
+            max-width: 100%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: white;
+        }
+        .export-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .export-options {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+        }
+        .export-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #334155;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .export-options input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #eab308;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <h1>
+        拼豆图纸生成器
+        <span>导出 · 图例 · 数字</span>
+    </h1>
+
+    <div class="main-panel">
+        <div class="canvas-area">
+            <div class="specs-row">
+                <div class="spec-item">
+                    <label>列数</label>
+                    <input type="number" id="colsInput" value="20" min="4" max="200" step="1">
+                </div>
+                <div class="spec-item">
+                    <label>行数</label>
+                    <input type="number" id="rowsInput" value="20" min="4" max="200" step="1">
+                </div>
+                <button id="applySpecBtn" class="primary">应用规格</button>
+                <div class="zoom-controls">
+                    <button id="zoomOutBtn">−</button>
+                    <span class="zoom-value" id="zoomValue">16px</span>
+                    <button id="zoomInBtn">+</button>
+                </div>
+                <div class="mode-indicator" id="modeIndicator">拖动模式</div>
+                <button id="exportBtn" class="success">导出图纸</button>
+            </div>
+
+            <div class="canvas-scroll-container" id="canvasScrollContainer">
+                <div class="canvas-inner-wrapper" id="canvasInnerWrapper">
+                    <canvas id="beadCanvas"></canvas>
+                    <div class="axis-x" id="axisX"></div>
+                    <div class="axis-y" id="axisY"></div>
+                </div>
+            </div>
+            <div class="status" id="statusMsg">拖动平移画布 · 滚轮缩放画布 · 点击绘制格子</div>
+        </div>
+
+        <div class="controls">
+            <div>
+                <div class="section-title">导入图片</div>
+                <label class="file-label" style="width: 100%;">
+                    选择图片文件
+                    <input type="file" id="imageUpload" accept="image/png, image/jpeg, image/webp, image/gif, image/bmp">
+                </label>
+                <div class="hint" style="margin-top:6px;">导入后打开定位窗口，可拖动位置和等比缩放</div>
+                <button id="openPositionBtn" style="width:100%; margin-top:8px; display:none;" class="success">
+                    打开图片定位
+                </button>
+            </div>
+
+            <div id="imageInfoBox" style="display:none;">
+                <div class="section-title">当前图片</div>
+                <div class="image-preview-mini">
+                    <canvas id="miniPreview" width="60" height="60"></canvas>
+                    <div class="info" id="imageInfoText"></div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
+                <div class="section-title">
+                    相似色统一
+                    <span class="color-count-badge" id="colorCountBadge">颜色数: 0</span>
+                </div>
+                <div class="slider-row">
+                    <label>相似度</label>
+                    <input type="range" id="similarityRange" min="0" max="150" step="5" value="40">
+                    <span class="slider-value" id="similarityValue">40</span>
+                </div>
+                <div class="hint">数值越大，更多相近颜色会被合并（0 = 不合并）</div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button id="unifyBtn" class="success" style="flex:1; padding:8px 12px; font-size:0.85rem;">统一相似色</button>
+                    <button id="previewUnifyBtn" style="padding:8px 12px; font-size:0.85rem;">预览</button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
+                <div class="section-title">绘制 & 橡皮</div>
+                <div class="color-picker-wrapper" style="margin-bottom: 12px;">
+                    <input type="color" id="drawColor" value="#eab308">
+                    <span>当前颜色</span>
+                </div>
+                <div class="tool-group">
+                    <button id="drawModeBtn" style="flex:1;">绘制</button>
+                    <button id="eraseModeBtn" style="flex:1;">擦除</button>
+                </div>
+                <div class="hint" style="margin-top:8px;">提示：绘制时请先按住空格键或切换到绘制模式</div>
+                <div style="margin-top: 12px;">
+                    <button id="clearCanvasBtn" class="warning" style="width: 100%;">清空画布</button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
+                <div class="section-title">数字显示</div>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#334155; cursor:pointer;">
+                    <input type="checkbox" id="showNumbersToggle" style="width:16px; height:16px; accent-color:#eab308; cursor:pointer;">
+                    在格子上显示颜色编号
+                </label>
+                <div class="hint" style="margin-top:6px;">编号对应图例中的颜色编号，方便按号拼豆</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
+                <div class="section-title">重置</div>
+                <button id="resetToEmptyBtn" style="width: 100%;">重置为空白网格</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="position-modal" id="positionModal">
+    <div class="position-modal-content">
+        <div class="position-modal-header">
+            <h3>图片定位 - 拖动调整位置与大小</h3>
+            <span class="position-info" id="positionInfo">拖动图片调整位置，滚动缩放</span>
+        </div>
+        <div class="position-canvas-wrapper">
+            <canvas id="positionCanvas" width="600" height="600"></canvas>
+        </div>
+        <div class="position-controls">
+            <div class="slider-row" style="flex:2;">
+                <label>缩放</label>
+                <input type="range" id="imageScaleRange" min="10" max="300" step="1" value="100">
+                <span class="slider-value" id="imageScaleValue">100%</span>
+            </div>
+            <button id="resetPositionBtn">重置位置</button>
+        </div>
+        <div class="modal-actions">
+            <button id="cancelPositionBtn">取消</button>
+            <button id="applyPositionBtn" class="primary">应用到网格</button>
+        </div>
+    </div>
+</div>
+
+<div class="export-modal" id="exportModal">
+    <div class="export-modal-content">
+        <div class="export-header">
+            <h3>导出预览</h3>
+        </div>
+        <div class="export-options">
+            <label>
+                <input type="checkbox" id="optShowGrid" checked>
+                显示网格线
+            </label>
+            <label>
+                <input type="checkbox" id="optShowNumbers" checked>
+                显示颜色编号
+            </label>
+            <label>
+                <input type="checkbox" id="optShowLegend" checked>
+                包含图例
+            </label>
+            <label>
+                <input type="checkbox" id="optShowCoords" checked>
+                包含行列坐标
+            </label>
+        </div>
+        <div class="export-preview-wrapper">
+            <canvas id="exportPreviewCanvas"></canvas>
+        </div>
+        <div class="export-actions">
+            <button id="cancelExportBtn">取消</button>
+            <button id="downloadPngBtn" class="primary">下载 PNG</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let cols = 20;
+        let rows = 20;
+        let grid = [];
+
+        let cellSize = 16;
+        const MIN_CELL_SIZE = 4;
+        const MAX_CELL_SIZE = 48;
+
+        let editorMode = 'pan';
+        let currentColor = '#eab308';
+
+        let originalImage = null;
+        let pixelScale = 1;
+
+        let similarityThreshold = 40;
+
+        let imageOffsetX = 0;
+        let imageOffsetY = 0;
+        let imageScale = 1;
+
+        let showNumbersOnCanvas = false;
+
+        let colorIndexMap = new Map();
+
+        const canvas = document.getElementById('beadCanvas');
+        const ctx = canvas.getContext('2d');
+        const scrollContainer = document.getElementById('canvasScrollContainer');
+
+        const colsInput = document.getElementById('colsInput');
+        const rowsInput = document.getElementById('rowsInput');
+        const applySpecBtn = document.getElementById('applySpecBtn');
+        const imageUpload = document.getElementById('imageUpload');
+        const drawColorInput = document.getElementById('drawColor');
+        const drawModeBtn = document.getElementById('drawModeBtn');
+        const eraseModeBtn = document.getElementById('eraseModeBtn');
+        const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+        const resetToEmptyBtn = document.getElementById('resetToEmptyBtn');
+        const modeIndicator = document.getElementById('modeIndicator');
+        const statusMsg = document.getElementById('statusMsg');
+        const similarityRange = document.getElementById('similarityRange');
+        const similarityValue = document.getElementById('similarityValue');
+        const unifyBtn = document.getElementById('unifyBtn');
+        const previewUnifyBtn = document.getElementById('previewUnifyBtn');
+        const colorCountBadge = document.getElementById('colorCountBadge');
+        const axisX = document.getElementById('axisX');
+        const axisY = document.getElementById('axisY');
+        const zoomValue = document.getElementById('zoomValue');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const showNumbersToggle = document.getElementById('showNumbersToggle');
+        const exportBtn = document.getElementById('exportBtn');
+
+        const openPositionBtn = document.getElementById('openPositionBtn');
+        const positionModal = document.getElementById('positionModal');
+        const positionCanvas = document.getElementById('positionCanvas');
+        const positionCtx = positionCanvas.getContext('2d');
+        const imageScaleRange = document.getElementById('imageScaleRange');
+        const imageScaleValue = document.getElementById('imageScaleValue');
+        const resetPositionBtn = document.getElementById('resetPositionBtn');
+        const cancelPositionBtn = document.getElementById('cancelPositionBtn');
+        const applyPositionBtn = document.getElementById('applyPositionBtn');
+        const positionInfo = document.getElementById('positionInfo');
+        const imageInfoBox = document.getElementById('imageInfoBox');
+        const miniPreview = document.getElementById('miniPreview');
+        const miniCtx = miniPreview.getContext('2d');
+        const imageInfoText = document.getElementById('imageInfoText');
+
+        const exportModal = document.getElementById('exportModal');
+        const exportPreviewCanvas = document.getElementById('exportPreviewCanvas');
+        const exportCtx = exportPreviewCanvas.getContext('2d');
+        const cancelExportBtn = document.getElementById('cancelExportBtn');
+        const downloadPngBtn = document.getElementById('downloadPngBtn');
+        const optShowGrid = document.getElementById('optShowGrid');
+        const optShowNumbers = document.getElementById('optShowNumbers');
+        const optShowLegend = document.getElementById('optShowLegend');
+        const optShowCoords = document.getElementById('optShowCoords');
+
+        function initGrid(columns, rows, fillColor = null) {
+            const newGrid = [];
+            for (let r = 0; r < rows; r++) {
+                const row = [];
+                for (let c = 0; c < columns; c++) {
+                    row.push(fillColor);
+                }
+                newGrid.push(row);
+            }
+            return newGrid;
+        }
+
+        function resetGrid(columns, rows, fillColor = null) {
+            cols = columns;
+            rows = rows;
+            grid = initGrid(cols, rows, fillColor);
+            colsInput.value = cols;
+            rowsInput.value = rows;
+            resizeCanvas();
+            updateColorCount();
+            updateStatus(`网格已重置为 ${cols} x ${rows}`);
+        }
+
+        function updateColorIndexMap() {
+            const colorCount = new Map();
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const col = grid[r][c];
+                    if (col) colorCount.set(col, (colorCount.get(col) || 0) + 1);
+                }
+            }
+            const sorted = Array.from(colorCount.keys()).sort((a, b) => {
+                const diff = colorCount.get(b) - colorCount.get(a);
+                if (diff !== 0) return diff;
+                return a.localeCompare(b);
+            });
+            colorIndexMap.clear();
+            sorted.forEach((hex, i) => {
+                colorIndexMap.set(hex, i + 1);
+            });
+        }
+
+        function resizeCanvas() {
+            const totalWidth = cols * cellSize;
+            const totalHeight = rows * cellSize;
+            canvas.width = totalWidth;
+            canvas.height = totalHeight;
+            canvas.style.width = totalWidth + 'px';
+            canvas.style.height = totalHeight + 'px';
+
+            axisX.style.width = totalWidth + 'px';
+            axisY.style.height = totalHeight + 'px';
+
+            drawCanvas();
+            rebuildAxes();
+            zoomValue.textContent = cellSize + 'px';
+        }
+
+        function rebuildAxes() {
+            axisX.innerHTML = '';
+            const stepX = cellSize < 10 ? 5 : (cellSize < 20 ? 2 : 1);
+            for (let c = 1; c <= cols; c++) {
+                if (c === 1 || c % stepX === 0 || c === cols) {
+                    const label = document.createElement('div');
+                    label.className = 'axis-label';
+                    label.textContent = c;
+                    label.style.left = ((c - 0.5) * cellSize) + 'px';
+                    axisX.appendChild(label);
+                }
+            }
+
+            axisY.innerHTML = '';
+            const stepY = cellSize < 10 ? 5 : (cellSize < 20 ? 2 : 1);
+            for (let r = 1; r <= rows; r++) {
+                if (r === 1 || r % stepY === 0 || r === rows) {
+                    const label = document.createElement('div');
+                    label.className = 'axis-label';
+                    label.textContent = r;
+                    label.style.top = ((r - 0.5) * cellSize) + 'px';
+                    axisY.appendChild(label);
+                }
+            }
+        }
+
+        function getTextColor(hex) {
+            const rgb = hexToRgb(hex);
+            const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+            return luminance > 0.6 ? '#1e293b' : '#ffffff';
+        }
+
+        function drawCanvas() {
+            const totalWidth = cols * cellSize;
+            const totalHeight = rows * cellSize;
+
+            ctx.clearRect(0, 0, totalWidth, totalHeight);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+            updateColorIndexMap();
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const color = grid[r][c];
+                    const x = c * cellSize;
+                    const y = r * cellSize;
+
+                    if (color) {
+                        ctx.fillStyle = color;
+                        ctx.fillRect(x, y, cellSize, cellSize);
+
+                        if (showNumbersOnCanvas && cellSize >= 12) {
+                            const index = colorIndexMap.get(color);
+                            if (index !== undefined) {
+                                const fontSize = Math.min(cellSize * 0.55, 14);
+                                ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillStyle = getTextColor(color);
+                                ctx.fillText(index.toString(), x + cellSize / 2, y + cellSize / 2 + 0.5);
+                            }
+                        }
+                    }
+
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.lineWidth = cellSize >= 8 ? 0.8 : 0.5;
+                    ctx.strokeRect(x, y, cellSize, cellSize);
+                }
+            }
+
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, totalWidth, totalHeight);
+        }
+
+        function updateColorCount() {
+            const colors = new Set();
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (grid[r][c]) colors.add(grid[r][c]);
+                }
+            }
+            colorCountBadge.textContent = `颜色数: ${colors.size}`;
+            updateColorIndexMap();
+        }
+
+        function getCellFromEvent(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const canvasX = (clientX - rect.left) * scaleX;
+            const canvasY = (clientY - rect.top) * scaleY;
+
+            if (canvasX < 0 || canvasX >= canvas.width || canvasY < 0 || canvasY >= canvas.height) {
+                return null;
+            }
+
+            const col = Math.floor(canvasX / cellSize);
+            const row = Math.floor(canvasY / cellSize);
+
+            if (row >= 0 && row < rows && col >= 0 && col < cols) {
+                return { row, col };
+            }
+            return null;
+        }
+
+        function applyToolAtCell(row, col) {
+            if (row < 0 || row >= rows || col < 0 || col >= cols) return false;
+
+            if (editorMode === 'draw') {
+                if (grid[row][col] === currentColor) return false;
+                grid[row][col] = currentColor;
+            } else if (editorMode === 'erase') {
+                if (grid[row][col] === null) return false;
+                grid[row][col] = null;
+            } else {
+                return false;
+            }
+            drawCanvas();
+            updateColorCount();
+            return true;
+        }
+
+        let isDrawing = false;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let panScrollLeft = 0;
+        let panScrollTop = 0;
+        let spacePressed = false;
+
+        function handleStart(e) {
+            const cell = getCellFromEvent(e);
+            const shouldPan = (editorMode === 'pan') || spacePressed;
+
+            if (shouldPan) {
+                isPanning = true;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                panStartX = clientX;
+                panStartY = clientY;
+                panScrollLeft = scrollContainer.scrollLeft;
+                panScrollTop = scrollContainer.scrollTop;
+                canvas.classList.add('dragging');
+                if (e.touches) e.preventDefault();
+            } else if (cell) {
+                isDrawing = true;
+                applyToolAtCell(cell.row, cell.col);
+                updateStatus(`坐标 (${cell.col + 1}, ${cell.row + 1}) ${editorMode === 'draw' ? '绘制' : '擦除'}`);
+                if (e.touches) e.preventDefault();
+            }
+        }
+
+        function handleMove(e) {
+            if (isPanning) {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const dx = clientX - panStartX;
+                const dy = clientY - panStartY;
+                scrollContainer.scrollLeft = panScrollLeft - dx;
+                scrollContainer.scrollTop = panScrollTop - dy;
+                if (e.touches) e.preventDefault();
+                return;
+            }
+
+            if (isDrawing) {
+                const cell = getCellFromEvent(e);
+                if (cell) applyToolAtCell(cell.row, cell.col);
+                if (e.touches) e.preventDefault();
+            }
+        }
+
+        function handleEnd() {
+            isDrawing = false;
+            isPanning = false;
+            canvas.classList.remove('dragging');
+        }
+
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        canvas.addEventListener('touchstart', handleStart, { passive: false });
+        canvas.addEventListener('touchmove', handleMove, { passive: false });
+        canvas.addEventListener('touchend', handleEnd);
+        canvas.addEventListener('touchcancel', handleEnd);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !spacePressed) {
+                spacePressed = true;
+                canvas.style.cursor = 'grab';
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                spacePressed = false;
+                updateCursor();
+            }
+        });
+
+        function updateCursor() {
+            if (editorMode === 'pan' || spacePressed) {
+                canvas.style.cursor = 'grab';
+            } else if (editorMode === 'draw' || editorMode === 'erase') {
+                canvas.style.cursor = 'crosshair';
+            }
+        }
+
+        canvas.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey || !e.shiftKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -1 : 1;
+                const oldSize = cellSize;
+                let newSize = cellSize + delta;
+                if (newSize < MIN_CELL_SIZE) newSize = MIN_CELL_SIZE;
+                if (newSize > MAX_CELL_SIZE) newSize = MAX_CELL_SIZE;
+
+                if (newSize !== oldSize) {
+                    const rect = canvas.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+                    const cellX = mouseX / oldSize;
+                    const cellY = mouseY / oldSize;
+
+                    cellSize = newSize;
+                    resizeCanvas();
+
+                    const newMouseX = cellX * cellSize;
+                    const newMouseY = cellY * cellSize;
+                    scrollContainer.scrollLeft += newMouseX - mouseX;
+                    scrollContainer.scrollTop += newMouseY - mouseY;
+
+                    updateStatus(`格子大小: ${cellSize}px`);
+                }
+            }
+        }, { passive: false });
+
+        zoomInBtn.addEventListener('click', () => {
+            cellSize = Math.min(MAX_CELL_SIZE, cellSize + 2);
+            resizeCanvas();
+            updateStatus(`格子大小: ${cellSize}px`);
+        });
+
+        zoomOutBtn.addEventListener('click', () => {
+            cellSize = Math.max(MIN_CELL_SIZE, cellSize - 2);
+            resizeCanvas();
+            updateStatus(`格子大小: ${cellSize}px`);
+        });
+
+        showNumbersToggle.addEventListener('change', (e) => {
+            showNumbersOnCanvas = e.target.checked;
+            drawCanvas();
+            updateStatus(showNumbersOnCanvas ? '已显示颜色编号' : '已隐藏颜色编号');
+        });
+
+        applySpecBtn.addEventListener('click', () => {
+            let newCols = parseInt(colsInput.value, 10);
+            let newRows = parseInt(rowsInput.value, 10);
+            if (isNaN(newCols) || newCols < 4) newCols = 4;
+            if (isNaN(newRows) || newRows < 4) newRows = 4;
+            if (newCols > 200) newCols = 200;
+            if (newRows > 200) newRows = 200;
+
+            if (newCols === cols && newRows === rows) {
+                updateStatus('规格未变化');
+                return;
+            }
+
+            const newGrid = initGrid(newCols, newRows, null);
+            for (let r = 0; r < Math.min(rows, newRows); r++) {
+                for (let c = 0; c < Math.min(cols, newCols); c++) {
+                    newGrid[r][c] = grid[r][c];
+                }
+            }
+            grid = newGrid;
+            cols = newCols;
+            rows = newRows;
+            colsInput.value = cols;
+            rowsInput.value = rows;
+            resizeCanvas();
+            updateColorCount();
+            updateStatus(`规格已更新: ${cols} x ${rows}`);
+        });
+
+        function mapImageToGrid() {
+            if (!originalImage) {
+                updateStatus('请先导入图片');
+                return;
+            }
+
+            const scale = pixelScale;
+            const sampleWidth = cols * scale;
+            const sampleHeight = rows * scale;
+
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = sampleWidth;
+            offCanvas.height = sampleHeight;
+            const offCtx = offCanvas.getContext('2d');
+            offCtx.fillStyle = '#ffffff';
+            offCtx.fillRect(0, 0, sampleWidth, sampleHeight);
+
+            const imgRatio = originalImage.width / originalImage.height;
+            const gridRatio = cols / rows;
+
+            let baseDrawWidth, baseDrawHeight;
+            if (imgRatio > gridRatio) {
+                baseDrawWidth = cols;
+                baseDrawHeight = cols / imgRatio;
+            } else {
+                baseDrawHeight = rows;
+                baseDrawWidth = rows * imgRatio;
+            }
+
+            const drawWidthGrid = baseDrawWidth * imageScale;
+            const drawHeightGrid = baseDrawHeight * imageScale;
+
+            const drawX = (cols / 2 - drawWidthGrid / 2 + imageOffsetX) * scale;
+            const drawY = (rows / 2 - drawHeightGrid / 2 + imageOffsetY) * scale;
+            const drawW = drawWidthGrid * scale;
+            const drawH = drawHeightGrid * scale;
+
+            offCtx.drawImage(originalImage, drawX, drawY, drawW, drawH);
+
+            const imageData = offCtx.getImageData(0, 0, sampleWidth, sampleHeight);
+            const data = imageData.data;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    let totalR = 0, totalG = 0, totalB = 0, totalA = 0;
+                    let count = 0;
+
+                    for (let dy = 0; dy < scale; dy++) {
+                        for (let dx = 0; dx < scale; dx++) {
+                            const px = c * scale + dx;
+                            const py = r * scale + dy;
+                            if (px < sampleWidth && py < sampleHeight) {
+                                const idx = (py * sampleWidth + px) * 4;
+                                totalR += data[idx];
+                                totalG += data[idx + 1];
+                                totalB += data[idx + 2];
+                                totalA += data[idx + 3];
+                                count++;
+                            }
+                        }
+                    }
+
+                    if (count === 0) {
+                        grid[r][c] = null;
+                        continue;
+                    }
+
+                    const avgR = Math.round(totalR / count);
+                    const avgG = Math.round(totalG / count);
+                    const avgB = Math.round(totalB / count);
+
+                    grid[r][c] = rgbToHex(avgR, avgG, avgB);
+                }
+            }
+
+            drawCanvas();
+            updateColorCount();
+            updateMiniPreview();
+            updateStatus(`图片已映射（精细度 ${scale}x，缩放 ${Math.round(imageScale*100)}%）`);
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function updateMiniPreview() {
+            if (!originalImage) {
+                imageInfoBox.style.display = 'none';
+                return;
+            }
+            imageInfoBox.style.display = 'block';
+
+            miniCtx.clearRect(0, 0, 60, 60);
+            miniCtx.fillStyle = '#f1f5f9';
+            miniCtx.fillRect(0, 0, 60, 60);
+
+            const ratio = originalImage.width / originalImage.height;
+            let dw, dh;
+            if (ratio > 1) {
+                dw = 60;
+                dh = 60 / ratio;
+            } else {
+                dh = 60;
+                dw = 60 * ratio;
+            }
+            const dx = (60 - dw) / 2;
+            const dy = (60 - dh) / 2;
+            miniCtx.drawImage(originalImage, dx, dy, dw, dh);
+
+            imageInfoText.textContent = `${originalImage.width}×${originalImage.height} · 缩放 ${Math.round(imageScale*100)}%`;
+        }
+
+        function unifySimilarColors(apply = true) {
+            const colorSet = new Set();
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (grid[r][c]) colorSet.add(grid[r][c]);
+                }
+            }
+
+            const colors = Array.from(colorSet);
+            if (colors.length === 0) {
+                updateStatus('画布为空，无颜色可统一');
+                return;
+            }
+            if (colors.length === 1) {
+                updateStatus('只有一种颜色，无需统一');
+                return;
+            }
+
+            const threshold = similarityThreshold;
+            const mergeMap = new Map();
+            const groups = [];
+
+            const colorCount = new Map();
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const col = grid[r][c];
+                    if (col) colorCount.set(col, (colorCount.get(col) || 0) + 1);
+                }
+            }
+            colors.sort((a, b) => (colorCount.get(b) || 0) - (colorCount.get(a) || 0));
+
+            for (const color of colors) {
+                if (mergeMap.has(color)) continue;
+
+                const rgb1 = hexToRgb(color);
+                let merged = false;
+
+                for (const repColor of groups) {
+                    const rgb2 = hexToRgb(repColor);
+                    const dist = Math.sqrt(
+                        Math.pow(rgb1.r - rgb2.r, 2) +
+                        Math.pow(rgb1.g - rgb2.g, 2) +
+                        Math.pow(rgb1.b - rgb2.b, 2)
+                    );
+                    if (dist <= threshold) {
+                        mergeMap.set(color, repColor);
+                        merged = true;
+                        break;
+                    }
+                }
+
+                if (!merged) {
+                    groups.push(color);
+                    mergeMap.set(color, color);
+                }
+            }
+
+            let changedCount = 0;
+
+            if (apply) {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const originalColor = grid[r][c];
+                        if (originalColor) {
+                            const newColor = mergeMap.get(originalColor);
+                            if (newColor !== originalColor) {
+                                grid[r][c] = newColor;
+                                changedCount++;
+                            }
+                        }
+                    }
+                }
+                drawCanvas();
+                updateColorCount();
+                updateStatus(`相似色已统一，合并了 ${colors.length - groups.length} 种颜色，${changedCount} 个格子被更改`);
+            } else {
+                updateStatus(`预览: 原 ${colors.length} 种颜色 → 合并后 ${groups.length} 种（阈值 ${threshold}）`);
+            }
+        }
+
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    pixelScale = 1;
+
+                    imageOffsetX = 0;
+                    imageOffsetY = 0;
+                    imageScale = 1;
+
+                    mapImageToGrid();
+
+                    openPositionBtn.style.display = 'flex';
+                    updateMiniPreview();
+
+                    updateStatus(`已导入图片 ${img.width}×${img.height}，可打开定位窗口调整位置`);
+                    imageUpload.value = '';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        openPositionBtn.addEventListener('click', () => {
+            if (!originalImage) {
+                updateStatus('请先导入图片');
+                return;
+            }
+            drawPositionCanvas();
+            imageScaleRange.value = Math.round(imageScale * 100);
+            imageScaleValue.textContent = Math.round(imageScale * 100) + '%';
+            positionModal.classList.add('active');
+        });
+
+        function drawPositionCanvas() {
+            const W = positionCanvas.width;
+            const H = positionCanvas.height;
+            const cellW = W / cols;
+            const cellH = H / rows;
+
+            positionCtx.clearRect(0, 0, W, H);
+            positionCtx.fillStyle = '#ffffff';
+            positionCtx.fillRect(0, 0, W, H);
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    positionCtx.strokeStyle = '#e2e8f0';
+                    positionCtx.lineWidth = 1;
+                    positionCtx.strokeRect(c * cellW, r * cellH, cellW, cellH);
+                }
+            }
+
+            const imgRatio = originalImage.width / originalImage.height;
+            const gridRatio = cols / rows;
+
+            let baseDrawWidth, baseDrawHeight;
+            if (imgRatio > gridRatio) {
+                baseDrawWidth = cols;
+                baseDrawHeight = cols / imgRatio;
+            } else {
+                baseDrawHeight = rows;
+                baseDrawWidth = rows * imgRatio;
+            }
+
+            const drawWidthGrid = baseDrawWidth * imageScale;
+            const drawHeightGrid = baseDrawHeight * imageScale;
+
+            const drawX = (cols / 2 - drawWidthGrid / 2 + imageOffsetX) * cellW;
+            const drawY = (rows / 2 - drawHeightGrid / 2 + imageOffsetY) * cellH;
+            const drawW = drawWidthGrid * cellW;
+            const drawH = drawHeightGrid * cellH;
+
+            positionCtx.globalAlpha = 0.75;
+            positionCtx.drawImage(originalImage, drawX, drawY, drawW, drawH);
+            positionCtx.globalAlpha = 1.0;
+
+            positionCtx.strokeStyle = '#eab308';
+            positionCtx.lineWidth = 2;
+            positionCtx.setLineDash([6, 4]);
+            positionCtx.strokeRect(drawX, drawY, drawW, drawH);
+            positionCtx.setLineDash([]);
+
+            positionInfo.textContent = `偏移 (${imageOffsetX.toFixed(2)}, ${imageOffsetY.toFixed(2)}) · 缩放 ${Math.round(imageScale*100)}%`;
+        }
+
+        let isDraggingImage = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let dragStartOffsetX = 0;
+        let dragStartOffsetY = 0;
+
+        positionCanvas.addEventListener('mousedown', (e) => {
+            isDraggingImage = true;
+            const rect = positionCanvas.getBoundingClientRect();
+            const scaleX = positionCanvas.width / rect.width;
+            const scaleY = positionCanvas.height / rect.height;
+            dragStartX = (e.clientX - rect.left) * scaleX;
+            dragStartY = (e.clientY - rect.top) * scaleY;
+            dragStartOffsetX = imageOffsetX;
+            dragStartOffsetY = imageOffsetY;
+        });
+
+        positionCanvas.addEventListener('mousemove', (e) => {
+            if (!isDraggingImage) return;
+            const rect = positionCanvas.getBoundingClientRect();
+            const scaleX = positionCanvas.width / rect.width;
+            const scaleY = positionCanvas.height / rect.height;
+            const currentX = (e.clientX - rect.left) * scaleX;
+            const currentY = (e.clientY - rect.top) * scaleY;
+
+            const cellW = positionCanvas.width / cols;
+            const cellH = positionCanvas.height / rows;
+
+            imageOffsetX = dragStartOffsetX + (currentX - dragStartX) / cellW;
+            imageOffsetY = dragStartOffsetY + (currentY - dragStartY) / cellH;
+
+            drawPositionCanvas();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingImage = false;
+        });
+
+        positionCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDraggingImage = true;
+            const rect = positionCanvas.getBoundingClientRect();
+            const scaleX = positionCanvas.width / rect.width;
+            const scaleY = positionCanvas.height / rect.height;
+            const touch = e.touches[0];
+            dragStartX = (touch.clientX - rect.left) * scaleX;
+            dragStartY = (touch.clientY - rect.top) * scaleY;
+            dragStartOffsetX = imageOffsetX;
+            dragStartOffsetY = imageOffsetY;
+        }, { passive: false });
+
+        positionCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDraggingImage) return;
+            const rect = positionCanvas.getBoundingClientRect();
+            const scaleX = positionCanvas.width / rect.width;
+            const scaleY = positionCanvas.height / rect.height;
+            const touch = e.touches[0];
+            const currentX = (touch.clientX - rect.left) * scaleX;
+            const currentY = (touch.clientY - rect.top) * scaleY;
+
+            const cellW = positionCanvas.width / cols;
+            const cellH = positionCanvas.height / rows;
+
+            imageOffsetX = dragStartOffsetX + (currentX - dragStartX) / cellW;
+            imageOffsetY = dragStartOffsetY + (currentY - dragStartY) / cellH;
+
+            drawPositionCanvas();
+        }, { passive: false });
+
+        positionCanvas.addEventListener('touchend', () => {
+            isDraggingImage = false;
+        });
+
+        positionCanvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.05 : 0.05;
+            imageScale = Math.min(3, Math.max(0.1, imageScale + delta));
+            imageScaleRange.value = Math.round(imageScale * 100);
+            imageScaleValue.textContent = Math.round(imageScale * 100) + '%';
+            drawPositionCanvas();
+        }, { passive: false });
+
+        imageScaleRange.addEventListener('input', (e) => {
+            imageScale = parseInt(e.target.value, 10) / 100;
+            imageScaleValue.textContent = Math.round(imageScale * 100) + '%';
+            drawPositionCanvas();
+        });
+
+        resetPositionBtn.addEventListener('click', () => {
+            imageOffsetX = 0;
+            imageOffsetY = 0;
+            imageScale = 1;
+            imageScaleRange.value = 100;
+            imageScaleValue.textContent = '100%';
+            drawPositionCanvas();
+        });
+
+        cancelPositionBtn.addEventListener('click', () => {
+            positionModal.classList.remove('active');
+        });
+
+        applyPositionBtn.addEventListener('click', () => {
+            positionModal.classList.remove('active');
+            mapImageToGrid();
+            updateMiniPreview();
+            updateStatus(`已应用定位：偏移 (${imageOffsetX.toFixed(2)}, ${imageOffsetY.toFixed(2)})，缩放 ${Math.round(imageScale*100)}%`);
+        });
+
+        similarityRange.addEventListener('input', (e) => {
+            similarityThreshold = parseInt(e.target.value, 10);
+            similarityValue.textContent = similarityThreshold;
+        });
+
+        unifyBtn.addEventListener('click', () => unifySimilarColors(true));
+        previewUnifyBtn.addEventListener('click', () => unifySimilarColors(false));
+
+        function setMode(mode) {
+            editorMode = mode;
+
+            drawModeBtn.classList.remove('primary');
+            eraseModeBtn.classList.remove('primary');
+
+            if (mode === 'draw') {
+                drawModeBtn.classList.add('primary');
+                modeIndicator.textContent = '绘制模式';
+                modeIndicator.style.background = '#e0f2fe';
+                updateStatus('绘制模式：点击/拖动格子进行绘制');
+            } else if (mode === 'erase') {
+                eraseModeBtn.classList.add('primary');
+                modeIndicator.textContent = '擦除模式';
+                modeIndicator.style.background = '#fed7aa';
+                updateStatus('擦除模式：点击/拖动格子清除颜色');
+            } else {
+                modeIndicator.textContent = '拖动模式';
+                modeIndicator.style.background = '#e2e8f0';
+                updateStatus('拖动模式：按住拖动画布平移');
+            }
+            updateCursor();
+        }
+
+        drawModeBtn.addEventListener('click', () => setMode('draw'));
+        eraseModeBtn.addEventListener('click', () => setMode('erase'));
+        modeIndicator.addEventListener('click', () => setMode('pan'));
+
+        drawColorInput.addEventListener('input', (e) => {
+            currentColor = e.target.value;
+            if (editorMode !== 'draw') setMode('draw');
+            updateStatus(`当前颜色: ${currentColor}`);
+        });
+
+        clearCanvasBtn.addEventListener('click', () => {
+            grid = initGrid(cols, rows, null);
+            drawCanvas();
+            updateColorCount();
+            updateStatus('画布已清空');
+        });
+
+        resetToEmptyBtn.addEventListener('click', () => {
+            originalImage = null;
+            openPositionBtn.style.display = 'none';
+            imageInfoBox.style.display = 'none';
+            resetGrid(cols, rows, null);
+        });
+
+        // ========== 计算坐标步长 ==========
+        // 根据总格数和可用空间，自动选择合适的步长，避免数字过密
+        function calculateCoordinateStep(count, availableSpace, minSpacing = 30) {
+            // 如果每个刻度都放不下，就增加步长
+            // 可用空间 / 每格大小 = 能容纳的标签数
+            const maxLabels = Math.floor(availableSpace / minSpacing);
+            if (count <= maxLabels) return 1;
+
+            // 候选步长：1, 2, 5, 10, 20, 25, 50, 100
+            const candidates = [1, 2, 5, 10, 20, 25, 50, 100];
+            for (const step of candidates) {
+                const labelCount = Math.ceil(count / step);
+                if (labelCount <= maxLabels) {
+                    return step;
+                }
+            }
+            return Math.ceil(count / maxLabels);
+        }
+
+        // ========== 导出功能 ==========
+        function renderExportCanvas() {
+            const showGrid = optShowGrid.checked;
+            const showNums = optShowNumbers.checked;
+            const showLegend = optShowLegend.checked;
+            const showCoords = optShowCoords.checked;
+
+            const exportCellSize = Math.max(cellSize, 24);
+            const gridWidth = cols * exportCellSize;
+            const gridHeight = rows * exportCellSize;
+
+            // 坐标轴空间：根据是否显示坐标以及格子大小动态调整
+            const coordFontSize = Math.min(Math.max(exportCellSize * 0.4, 10), 14);
+            const paddingLeft = showCoords ? Math.max(40, coordFontSize * 3) : 0;
+            const paddingTop = showCoords ? Math.max(40, coordFontSize * 3) : 0;
+            const paddingRight = 20;
+            const paddingBottom = 20;
+
+            let legendWidth = 0;
+            let legendHeight = 0;
+            let legendCols = 1;
+            const legendItemHeight = 34;
+            const legendItemMinWidth = 110;
+
+            updateColorIndexMap();
+            const legendColors = Array.from(colorIndexMap.keys()).map(hex => ({
+                hex,
+                index: colorIndexMap.get(hex)
+            }));
+
+            if (showLegend && legendColors.length > 0) {
+                const maxLegendCols = 5;
+                legendCols = Math.min(maxLegendCols, Math.max(1, legendColors.length));
+                const legendRows = Math.ceil(legendColors.length / legendCols);
+                legendWidth = legendCols * legendItemMinWidth + 40;
+                legendHeight = legendRows * legendItemHeight + 60;
+            }
+
+            const totalWidth = paddingLeft + gridWidth + paddingRight + (showLegend ? legendWidth : 0);
+            const totalHeight = paddingTop + gridHeight + paddingBottom + (showLegend ? legendHeight : 0);
+
+            exportPreviewCanvas.width = totalWidth;
+            exportPreviewCanvas.height = totalHeight;
+
+            exportCtx.fillStyle = '#ffffff';
+            exportCtx.fillRect(0, 0, totalWidth, totalHeight);
+
+            // 绘制行号列号（自动步长）
+            if (showCoords) {
+                // 计算步长，保证标签间距至少 coordFontSize * 3
+                const minSpacing = Math.max(coordFontSize * 3, 30);
+                const stepX = calculateCoordinateStep(cols, gridWidth, minSpacing);
+                const stepY = calculateCoordinateStep(rows, gridHeight, minSpacing);
+
+                exportCtx.fillStyle = '#64748b';
+                exportCtx.font = `bold ${coordFontSize}px system-ui, sans-serif`;
+                exportCtx.textAlign = 'center';
+                exportCtx.textBaseline = 'middle';
+
+                // 列号（在网格上方）
+                for (let c = 1; c <= cols; c++) {
+                    // 显示第一个、最后一个、以及按步长整除的
+                    if (c === 1 || c === cols || c % stepX === 0) {
+                        const x = paddingLeft + (c - 0.5) * exportCellSize;
+                        const y = paddingTop / 2;
+                        exportCtx.fillText(c.toString(), x, y);
+                    }
+                }
+
+                // 行号（在网格左侧）
+                for (let r = 1; r <= rows; r++) {
+                    if (r === 1 || r === rows || r % stepY === 0) {
+                        const x = paddingLeft / 2;
+                        const y = paddingTop + (r - 0.5) * exportCellSize;
+                        exportCtx.fillText(r.toString(), x, y);
+                    }
+                }
+
+                // 绘制小刻度线，增强可读性
+                exportCtx.strokeStyle = '#cbd5e1';
+                exportCtx.lineWidth = 1;
+                for (let c = 1; c <= cols; c++) {
+                    if (c === 1 || c === cols || c % stepX === 0) {
+                        const x = paddingLeft + (c - 0.5) * exportCellSize;
+                        exportCtx.beginPath();
+                        exportCtx.moveTo(x, paddingTop - 4);
+                        exportCtx.lineTo(x, paddingTop);
+                        exportCtx.stroke();
+                    }
+                }
+                for (let r = 1; r <= rows; r++) {
+                    if (r === 1 || r === rows || r % stepY === 0) {
+                        const y = paddingTop + (r - 0.5) * exportCellSize;
+                        exportCtx.beginPath();
+                        exportCtx.moveTo(paddingLeft - 4, y);
+                        exportCtx.lineTo(paddingLeft, y);
+                        exportCtx.stroke();
+                    }
+                }
+            }
+
+            // 绘制网格
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const color = grid[r][c];
+                    const x = paddingLeft + c * exportCellSize;
+                    const y = paddingTop + r * exportCellSize;
+
+                    if (color) {
+                        exportCtx.fillStyle = color;
+                        exportCtx.fillRect(x, y, exportCellSize, exportCellSize);
+
+                        if (showNums) {
+                            const index = colorIndexMap.get(color);
+                            if (index !== undefined) {
+                                const fontSize = Math.min(exportCellSize * 0.5, 16);
+                                exportCtx.font = `bold ${fontSize}px system-ui, sans-serif`;
+                                exportCtx.textAlign = 'center';
+                                exportCtx.textBaseline = 'middle';
+                                exportCtx.fillStyle = getTextColor(color);
+                                exportCtx.fillText(index.toString(), x + exportCellSize / 2, y + exportCellSize / 2 + 0.5);
+                            }
+                        }
+                    }
+
+                    if (showGrid) {
+                        exportCtx.strokeStyle = '#cbd5e1';
+                        exportCtx.lineWidth = 1;
+                        exportCtx.strokeRect(x, y, exportCellSize, exportCellSize);
+                    }
+                }
+            }
+
+            exportCtx.strokeStyle = '#94a3b8';
+            exportCtx.lineWidth = 2;
+            exportCtx.strokeRect(paddingLeft, paddingTop, gridWidth, gridHeight);
+
+            // 绘制图例
+            if (showLegend && legendColors.length > 0) {
+                const legendStartX = paddingLeft + gridWidth + paddingRight + 20;
+                const legendStartY = paddingTop + 10;
+
+                exportCtx.fillStyle = '#1e293b';
+                exportCtx.font = 'bold 16px system-ui, sans-serif';
+                exportCtx.textAlign = 'left';
+                exportCtx.textBaseline = 'top';
+                exportCtx.fillText('颜色图例', legendStartX, legendStartY);
+
+                const itemStartY = legendStartY + 34;
+
+                legendColors.forEach((item, i) => {
+                    const col = i % legendCols;
+                    const row = Math.floor(i / legendCols);
+                    const ix = legendStartX + col * legendItemMinWidth;
+                    const iy = itemStartY + row * legendItemHeight;
+
+                    exportCtx.fillStyle = item.hex;
+                    exportCtx.fillRect(ix, iy, 24, 24);
+                    exportCtx.strokeStyle = '#94a3b8';
+                    exportCtx.lineWidth = 1;
+                    exportCtx.strokeRect(ix, iy, 24, 24);
+
+                    exportCtx.fillStyle = getTextColor(item.hex);
+                    exportCtx.font = 'bold 12px system-ui, sans-serif';
+                    exportCtx.textAlign = 'center';
+                    exportCtx.textBaseline = 'middle';
+                    exportCtx.fillText(item.index.toString(), ix + 12, iy + 12);
+
+                    exportCtx.fillStyle = '#334155';
+                    exportCtx.font = '12px system-ui, sans-serif';
+                    exportCtx.textAlign = 'left';
+                    exportCtx.textBaseline = 'middle';
+                    exportCtx.fillText(item.hex.toUpperCase(), ix + 32, iy + 12);
+                });
+            }
+
+            return { totalWidth, totalHeight };
+        }
+
+        exportBtn.addEventListener('click', () => {
+            if (cols === 0 || rows === 0) {
+                updateStatus('画布为空，无可导出内容');
+                return;
+            }
+            renderExportCanvas();
+            exportModal.classList.add('active');
+        });
+
+        [optShowGrid, optShowNumbers, optShowLegend, optShowCoords].forEach(el => {
+            el.addEventListener('change', () => {
+                if (exportModal.classList.contains('active')) {
+                    renderExportCanvas();
+                }
+            });
+        });
+
+        cancelExportBtn.addEventListener('click', () => {
+            exportModal.classList.remove('active');
+        });
+
+        downloadPngBtn.addEventListener('click', () => {
+            const { totalWidth, totalHeight } = renderExportCanvas();
+
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+            const filename = `拼豆图纸_${cols}x${rows}_${timestamp}.png`;
+
+            exportPreviewCanvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                updateStatus(`已导出: ${filename}`);
+                exportModal.classList.remove('active');
+            }, 'image/png');
+        });
+
+        function updateStatus(msg) {
+            statusMsg.textContent = msg;
+        }
+
+        resetGrid(20, 20, null);
+        setMode('pan');
+        currentColor = '#eab308';
+        drawColorInput.value = '#eab308';
+        similarityRange.value = 40;
+        similarityValue.textContent = '40';
+
+        colsInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') applySpecBtn.click();
+        });
+        rowsInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') applySpecBtn.click();
+        });
+
+        canvas.addEventListener('dragstart', (e) => e.preventDefault());
+    })();
+</script>
+</body>
+</html>
